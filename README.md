@@ -1,12 +1,12 @@
 # betterwait
-Binary package betterwait is a highly effective solution to test and wait on the availability of a TCP host and port for developers and devops engineers.
+Binary package betterwait is a easy and highly effective solution to test and wait on the availability of a TCP host and port for developers and devops engineers.
 
 ## Compatible with
-Windows, Linux, MacOS
+Windows, Linux, macOS
+
+Download the binary package for your OS from [here]("https://github.com/gvaishno/betterwait/releases").
 
 ## Usage example
-
-Download the binary package for your OS from [here]("https://github.com/gvaishno/betterwait/releases") and run it.
 
 ```bash
 $ betterwait -help
@@ -21,9 +21,9 @@ Options:
 	-quiet		Quiet mode.
 ```
 
-## Code integration
+## SDK integration
 
-Will be available soon
+Will be available soon.
 
 ## License
 [`APACHE-2.0 LICENSE`](LICENSE)
