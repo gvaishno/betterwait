@@ -6,7 +6,7 @@ Windows, Linux, MacOS
 
 ## Usage example
 
-Download the binary package for your OS from [here]("#") and run it.
+Download the binary package for your OS from [here]("https://github.com/gvaishno/betterwait/releases") and run it.
 
 ```bash
 $ betterwait -help
