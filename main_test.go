@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	betterwait "betterwait/pkg/engine"
+	"testing"
+)
 
 func TestGoodCases(t *testing.T) {
 	var goodtests = []struct {
@@ -21,7 +24,7 @@ func TestGoodCases(t *testing.T) {
 		try := &test.try
 		quiet := &test.quiet
 
-		if !betterwait(host, port, try, quiet) {
+		if !betterwait.Betterwait(host, port, try, quiet) {
 			t.Errorf("betterwait(%q, %q, %d, %t) = %t, want %t", test.host, test.port, test.try, test.quiet, false, test.want)
 		}
 	}
@@ -51,7 +54,7 @@ func TestBadCases(t *testing.T) {
 		try := &test.try
 		quiet := &test.quiet
 
-		if betterwait(host, port, try, quiet) {
+		if betterwait.Betterwait(host, port, try, quiet) {
 			t.Errorf("betterwait(%q, %q, %d, %t) = %t, want %t", test.host, test.port, test.try, test.quiet, true, test.want)
 		}
 	}
