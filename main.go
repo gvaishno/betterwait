@@ -31,8 +31,8 @@ Options:
 package main
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -42,28 +42,86 @@ import (
 	"time"
 )
 
+// Parse the Ip address
+func ParseIP(s string) (string, error) {
+	ip, _, err := net.SplitHostPort(s)
+	if err == nil {
+		return ip, nil
+	}
+
+	ip2 := net.ParseIP(s)
+	if ip2 == nil {
+		return "", errors.New("invalid IP")
+	}
+
+	return ip2.String(), nil
+}
+
+// Is IP address valid or not
+func isValidIp(ip *string) bool {
+
+	var validIP bool
+
+	ipaddr := net.ParseIP(*ip)
+
+	if ipaddr == nil {
+		validIP = false
+	} else {
+		validIP = true
+	}
+
+	return validIP
+}
+
+// Check if the host is a IP address
+func isHostIPaddress(host *string) (bool, string) {
+	var isIP bool
+	// Get the IP address in the host address.
+	ip, _ := ParseIP(*host)
+
+	// Check if the IP address is valid.
+	if ip != "" {
+		isIP = true
+	} else {
+		isIP = false
+	}
+
+	return isIP, ip
+}
+
 // Check host scheme.
 func isHostScheme(host *string) bool {
 	var trackScheme bool
 	// Get the Scheme in the host address.
-	u, err := url.Parse(*host)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	// Check is the Scheme has . using regex.
-	re := regexp.MustCompile(`\.`)
-	if u.Scheme != "" && re.MatchString(u.Scheme) {
-		// Its not a valid Scheme.
-		trackScheme = false
-	} else if u.Scheme == "" {
-		// Its a valid Scheme.
-		trackScheme = false
+	// If the host is a IP address.
+	isIP, ip := isHostIPaddress(host)
+	if isIP {
+		// Check if ip is valid
+		if isValidIp(&ip) {
+			trackScheme = false
+		} else {
+			trackScheme = true
+		}
 	} else {
-		// Its a valid Scheme.
-		trackScheme = true
-	}
+		u, err := url.Parse(*host)
+		if err != nil {
+			log.Fatal(err)
+		}
 
+		// Check is the Scheme has . using regex.
+		re := regexp.MustCompile(`\.`)
+		if u.Scheme != "" && re.MatchString(u.Scheme) {
+			// Its not a valid Scheme.
+			trackScheme = false
+		} else if u.Scheme == "" {
+			// Its not a valid Scheme.
+			trackScheme = false
+		} else {
+			// Its a valid Scheme.
+			trackScheme = true
+		}
+	}
 	return trackScheme
 }
 
@@ -85,7 +143,7 @@ func isHostPort(host *string) bool {
 }
 
 // ConnectLoop tries to send tcp packets to the given address until it succeeds or times out.
-func ConnectLoop(address *string, port *string, try *int, quiet *bool) {
+func ConnectLoop(address *string, port *string, try *int, quiet *bool) bool {
 	addr := *address
 	p := *port
 	t := *try
@@ -96,7 +154,9 @@ func ConnectLoop(address *string, port *string, try *int, quiet *bool) {
 	}
 
 	for i := 0; i < t; i += 1 {
-		conn, err := net.Dial("tcp", net.JoinHostPort(addr, p))
+		// Timeout in seconds.
+		timeout := time.Duration(1 * time.Second)
+		conn, err := net.DialTimeout("tcp", net.JoinHostPort(addr, p), timeout)
 
 		switch err {
 		// Error is nil and the connection is established successfully. Then break the loop.
@@ -106,7 +166,7 @@ func ConnectLoop(address *string, port *string, try *int, quiet *bool) {
 			}
 
 			conn.Close()
-			return
+			return true
 		default:
 			// Waiting for a while before trying again.
 			if !q {
@@ -117,7 +177,68 @@ func ConnectLoop(address *string, port *string, try *int, quiet *bool) {
 		}
 	}
 	// If the connection is not established within the given number of tries.
-	fmt.Printf("ERROR: Failed to connect to %s.", addr)
+	return false
+}
+
+// Entry point of the program.
+func betterwait(host *string, port *string, try *int, quiet *bool) bool {
+	var res bool
+
+	h := *host
+	p := *port
+	t := *try
+	q := *quiet
+
+	hostaddr := &h
+	portnum := &p
+	trynum := &t
+	quietmode := &q
+
+	// If the host address is not specified.
+	if *host == "" {
+		if !q {
+			log.Println("ERROR: You must specify an host address.")
+			flag.Usage()
+		}
+		res = false
+		return res
+	}
+
+	//
+
+	// Check if the host address has a scheme.
+	if isHostScheme(host) {
+		if !q {
+			log.Println("ERROR: The host address has scheme prefix. Please use -port instead.")
+			flag.Usage()
+		}
+		res = false
+		return res
+	}
+
+	// Check if the host address has a port suffix.
+	if isHostPort(host) {
+		if !q {
+			log.Println("ERROR: The host address has port suffix. Please use -port instead.")
+			flag.Usage()
+		}
+		res = false
+		return res
+	}
+
+	// Check if the port is a integer.
+	if _, err := strconv.Atoi(*port); err != nil {
+		if !q {
+			log.Println("ERROR: The port you specified is not a number. Please enter a valid port number.")
+			flag.Usage()
+		}
+		res = false
+		return res
+	}
+
+	// Call the ConnectLoop function.
+	res = ConnectLoop(hostaddr, portnum, trynum, quietmode)
+	return res
 }
 
 func main() {
@@ -137,44 +258,6 @@ func main() {
 	// Enable command-line parsing
 	flag.Parse()
 
-	h := *host
-	p := *port
-	t := *try
-	q := *quiet
-
-	// If the host address is not specified.
-	if *host == "" {
-		log.Println("ERROR: You must specify an host address.")
-		flag.Usage()
-		return
-	}
-
-	hostaddr := &h
-	portnum := &p
-	trynum := &t
-	quietmode := &q
-
-	// Check if the host address has a scheme.
-	if isHostScheme(host) {
-		log.Println("ERROR: The host address has scheme prefix. Please use -port instead.")
-		flag.Usage()
-		return
-	}
-
-	// Check if the host address has a port suffix.
-	if isHostPort(host) {
-		log.Println("ERROR: The host address has port suffix. Please use -port instead.")
-		flag.Usage()
-		return
-	}
-
-	// Check if the port is a integer.
-	if _, err := strconv.Atoi(*port); err != nil {
-		log.Println("ERROR: The port you specified is not a number. Please enter a valid port number.")
-		flag.Usage()
-		return
-	}
-
-	// Call the ConnectLoop function.
-	ConnectLoop(hostaddr, portnum, trynum, quietmode)
+	// Call the betterwait function to test and wait for the host address.
+	betterwait(host, port, try, quiet)
 }
