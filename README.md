@@ -4,7 +4,10 @@ Binary package betterwait is a easy and highly effective solution to test and wa
 ## Compatible with
 Windows, Linux, macOS
 
-Download the binary package for your OS from [`here`]("https://github.com/gvaishno/betterwait/releases").
+Download the binary package for your OS from here.
+```bash
+https://github.com/gvaishno/betterwait/releases
+```
 
 ## Usage example
 
