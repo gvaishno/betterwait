@@ -15,7 +15,7 @@ limitations under the License.
 
 Binary package betterwait is a easy and highly effective solution to test and
 wait on the availability of a TCP host and port for developers and
-devops engineers.
+DevOps engineers.
 
 Usage:
 	betterwait [options]
